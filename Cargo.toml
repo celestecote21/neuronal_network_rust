@@ -1,7 +1,7 @@
 [package]
-name = "image_test"
+name = "neuronal_network_rust"
 version = "0.1.0"
-authors = ["cote celeste <celeste.cote21@gmail.com>"]
+authors = ["cote celeste <celeste@cote21.fr>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
