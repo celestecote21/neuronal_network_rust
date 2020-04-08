@@ -1,14 +1,16 @@
 extern crate rand;
 
+mod linear_math;
+
 use rand::prelude::*;
 use rand_distr::StandardNormal;
-
+use linear_math as lm; 
 
 pub struct Network{
     nb_layer: usize,
     layers_size: Vec<u32>,
-    bias: Vec<Vec<f64>>,
-    weight: Vec<Vec<Vec<f64>>>,
+    bias: Vec<Vec<f32>>,
+    weight: Vec<Vec<Vec<f32>>>,
 }
 
 
@@ -48,7 +50,18 @@ impl Network{
         }
     }
 
-    pub fn compute(&self, mut input: Vec<f64>) -> Result<Vec<f64>, i8>{
+    pub fn mini_batch(&mut self, mini_batch: Vec<(Vec<f32>, u8)>){
+        for i in mini_batch.iter(){
+            // let mut delta_out = Vec::new();
+
+            println!("{:?}", *i);
+        }
+    }
+
+    pub fn compute(&self, mut input: Vec<f32>) -> Result<(Vec<Vec<f32>>, Vec<Vec<f32>>), i8>{
+        let mut zl_x = Vec::new();
+        let mut al_x = Vec::new();
+
         for current_dim in 0..self.nb_layer - 1{
             if input.len() != self.layers_size[current_dim] as usize{
                 return Err(-1);
@@ -62,12 +75,15 @@ impl Network{
                 }
                 v_inter.push(somme + self.bias[current_dim][current_neur])
             } // repeter pour chaque dimension normalement en remplacent just l'input c'est good
+            zl_x.push(v_inter.clone());
+
             input = Network::sigmoid(&v_inter);
+            al_x.push(input.clone());
         }
-        Ok(input)
+        Ok((al_x, zl_x))
     }
 
-    fn sigmoid(v: &Vec<f64>) -> Vec<f64>{
+    fn sigmoid(v: &Vec<f32>) -> Vec<f32>{
         // println!("before {:?}", *v);
         let mut result = Vec::new();
         for i in v.iter(){

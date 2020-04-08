@@ -13,7 +13,7 @@ pub struct ImageTrain{
     nb_dim: u8,
     size_dim: Vec<u32>,
     nb_label: usize,
-    vec_tuple: Vec<(Vec<f64>, u8)>,
+    vec_tuple: Vec<(Vec<f32>, u8)>,
     vec_used: Vec<bool>,
     chunk_size: usize,
     current_chunk: usize,
@@ -45,7 +45,7 @@ impl ImageTrain{
         let mut tab_precalcul = Vec::new();
         let coef = 2.0 / 255.0;
         for i in 0..256{
-            tab_precalcul.push(i as f64 * coef - 1.0);
+            tab_precalcul.push(i as f32 * coef - 1.0);
         }
 
         let mut f = match File::open(file_name){
@@ -138,7 +138,7 @@ impl ImageTrain{
 
     }
 
-    pub fn next_chunk(&mut self, chunk_size: usize) -> Result<Vec<(Vec<f64>, u8)>, String>{
+    pub fn next_chunk(&mut self) -> Result<Vec<(Vec<f32>, u8)>, String>{
 
         if self.current_chunk + self.chunk_size > self.vec_tuple.len(){
             return Err("end of file".to_string());
