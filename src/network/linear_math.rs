@@ -42,7 +42,7 @@ pub fn hadamard<T>(a: Vec<T>, b: Vec<T>) -> Result<Vec<T>, String>
         return Err("the Vec don't have the same size".to_string());
     }
     // TODO: essayer d'avoir un algo assez rapide
-    Ok(a)
+    Ok(a.iter().zip(b.iter()).map(|(x, y)| *x * *y).collect())
 
 }
 
@@ -52,9 +52,11 @@ pub fn hadamard<T>(a: Vec<T>, b: Vec<T>) -> Result<Vec<T>, String>
 
 
 
-
 #[cfg(test)]
 mod tests_vec{
+
+    use crate::network::linear_math::*;
+
     #[test]
     fn test_sub(){
         let a = vec![1, 2, 3, 4];
@@ -67,6 +69,15 @@ mod tests_vec{
         let y = 4;
         let size = 10;
         assert_eq!(crate::network::linear_math::reponse_to_vec(y, size), vec![0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_elementwise(){
+        let a = vec![1, 2, 3, 4];
+        let b = vec![1, 2, 2, 2];
+        let c = vec![1, 4, 6, 8];
+
+        assert_eq!(hadamard(a, b).unwrap(), c);
     }
 }
 
