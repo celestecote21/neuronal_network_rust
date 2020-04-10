@@ -32,15 +32,15 @@ impl Network{
         // creation weight vector
         
         for i in 0..size.len() - 1{
-            let mut v_wd = Vec::new();
-            for _dn in 0..size[i]{
-                let mut v_wdn = Vec::new();
-                for _fn in 0..size[i+1]{
-                    v_wdn.push(thread_rng().sample(StandardNormal));
+            let mut w_out = Vec::new();
+            for _dn in 0..size[i + 1]{
+                let mut w_in = Vec::new();
+                for _fn in 0..size[i]{
+                    w_in.push(thread_rng().sample(StandardNormal));
                 }
-                v_wd.push(v_wdn);
+                w_out.push(w_in);
             }
-            weight_temp.push(v_wd);
+            weight_temp.push(w_out);
         }
 
         Network{
@@ -56,75 +56,83 @@ impl Network{
         let mut delta_total = Vec::new();
         let mut a_total = Vec::new();
         for i in mini_batch.iter(){
-            let mut layer = self.nb_layer - 2;
+            let mut layer = self.weight.len() - 1;
             let mut delta = Vec::new();
             let y = lm::reponse_to_vec(i.1 as usize, 10);
             let result_compute = self.compute(i.0.to_vec()).unwrap();
             let a_last = result_compute.0[layer].to_vec();
             let z_last = result_compute.1[layer].to_vec();
+            let mut z_al = result_compute.1.to_vec();
+            z_al.pop();
 
             let delta_out = lm::scalar_mult(2.0, lm::soustraction(y, a_last).unwrap());
             let mut delta_out = match lm::hadamard(delta_out, Network::sigmoid_deri_v(z_last)){
                 Ok(v) => v,
                 Err(err) => panic!("error on delta out {}", err),
             };
-            delta.push(delta_out);
+
+            delta.insert(0, delta_out); // on met le delta de la sortie dernier (c'est le premier donc voila mais par principe)
             if layer <= 0{
                 panic!("implemeter que 2 layer");
             }
             layer += 1;
-            for current_dim in (1..layer).rev(){
+            for current_dim in (2..layer + 1).rev(){
+                // println!("{:?}", current_dim);
                 let mut delta_current_dim = Vec::new();
-                for neur_L in 0..(self.layers_size[current_dim]) as usize{
+                for neur_L in 0..(self.layers_size[current_dim - 1]) as usize{
                     let mut delta_n = 0.0;
-                    for neur_L1 in 0..(self.layers_size[current_dim + 1] - 1) as usize{
-                        delta_n += delta.last().unwrap()[neur_L1] * self.weight[current_dim][neur_L][neur_L1];
+                    for neur_L1 in 0..(self.layers_size[current_dim]) as usize{
+                        delta_n += delta[0][neur_L1] * self.weight[current_dim - 1][neur_L1][neur_L];
                     }
                     delta_current_dim.push(delta_n);
                 }
-                delta.push(delta_current_dim);
+                // println!("{}", delta_current_dim.len());
+                println!("{:?}", z_al.last().unwrap());
+                delta.insert(0, lm::hadamard(Network::sigmoid_deri_v(z_al.pop().unwrap()),delta_current_dim).unwrap());
             }
-
+            // println!("{}", delta.len());
             delta_total.push(delta);
             a_total.push(result_compute.0);
         }
+        println!("{:?}", delta_total);
         self.change_b_w(delta_total, a_total);
     }
 
 
     fn change_b_w(&mut self, delta_total: Vec<Vec<Vec<f32>>>, a_total: Vec<Vec<Vec<f32>>>) -> Result<i8, String>{
         let im_layer = delta_total[0].len();
-        let mut delta_final = Vec::new();
+        let mut n_bias = Vec::new();
         for i in 0..im_layer{ // pour chaque layer
             let im_neurone = delta_total[0][i].len(); // nombre de neurone dans le layer
-            let mut delta_1_layer = Vec::new(); 
+            let mut bias_1_layer = Vec::new(); 
             for j in 0..im_neurone{ // pour chaque neurone dans un layer
                 let mut somme = 0.0;
                 for k in 0..(delta_total.len()){ // pour chaque image
                     somme += delta_total[k][i][j]; // on ajoute donc le delta d'un meme neurone a travers les 10 images
                 }
-                somme = somme / (delta_total.len() + 1) as f32; // on veut la moyenne donc on divise par le nombre d'image
-                delta_1_layer.push(somme); // on met le resultat dans le vector, vector de la moyenne des deltas de tout les neurones d'un layer 
+                somme = (self.mu * somme) / delta_total.len() as f32; // on veut la moyenne des image , et on multiplie par mu
+                bias_1_layer.push(self.bias[im_layer - 1 - i][j] - somme); // on met le resultat dans le vector, vector de la moyenne des deltas de tout les neurones d'un layer 
             }
-            delta_final.push(delta_1_layer); // vector de tous les layers
+            n_bias.push(bias_1_layer); // vector de tous les layers
         }
-        println!("{:?} delta_final \n", delta_final);
+        println!("{:?} n_bias\n", n_bias);
+        self.bias = n_bias;
 
         let mut new_weight = Vec::new();
 
-        let im_layer = delta_total[0].len() - 1;
-        for dim in (0..im_layer){ // pour chaque layer
+        let im_layer = delta_total[0].len();
+        for dim in 0..im_layer{ // pour chaque layer
             let mut out = Vec::new();
             for i in 0..delta_total[0][dim + 1].len(){ // pour chaque erreur dans neurone dans L OUT
-                let mut In = Vec::new();
+                let mut in_v = Vec::new();
                 for j in 0..a_total[0][dim].len(){ // pour chaque activation dans les neurones dans L-1 IN
                     let mut somme = 0.0;
                     for k in 0..delta_total.len(){ // pour tout les images on prend la somme
                        somme += delta_total[k][dim + 1][i] * a_total[k][dim][j];
                     }
-                    In.push(self.weight[dim][i][j] - (self.mu*somme)/delta_total.len() as f32);
+                    in_v.push(self.weight[dim][i][j] - (self.mu*somme)/delta_total.len() as f32);
                 }
-                out.push(In);
+                out.push(in_v);
             }
             println!("{:?}", out);
             new_weight.push(out);
@@ -145,7 +153,7 @@ impl Network{
             for current_neur in 0..self.layers_size[current_dim + 1] as usize{
                 let mut somme = 0.0;
                 for i in 0..input.len(){
-                    somme += input[i] * self.weight[current_dim][i][current_neur]; 
+                    somme += input[i] * self.weight[current_dim][current_neur][i]; 
                     // let test:f64 = self.weight[current_dim][i][current_neur]; 
                 }
                 v_inter.push(somme + self.bias[current_dim][current_neur])
@@ -155,6 +163,7 @@ impl Network{
             input = Network::sigmoid_v(&v_inter);
             al_x.push(input.clone());
         }
+        // println!("{:?} \n", al_x);
         Ok((al_x, zl_x))
     }
 

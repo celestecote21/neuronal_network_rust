@@ -17,7 +17,7 @@ fn main() {
     };
     
 
-    let mut network = Network::new(vec![784, 16, 16, 10], 3.0);
+    let mut network = Network::new(vec![784, 11, 16, 10], 3.0);
 
     network.mini_batch(match train.next_chunk(){
         Ok(v) => v,

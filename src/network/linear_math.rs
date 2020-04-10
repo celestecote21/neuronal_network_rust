@@ -41,7 +41,6 @@ pub fn hadamard<T>(a: Vec<T>, b: Vec<T>) -> Result<Vec<T>, String>
     if a.len() != b.len(){
         return Err("the Vec don't have the same size".to_string());
     }
-    // TODO: essayer d'avoir un algo assez rapide
     Ok(a.iter().zip(b.iter()).map(|(x, y)| *x * *y).collect())
 
 }
