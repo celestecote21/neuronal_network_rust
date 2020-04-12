@@ -61,11 +61,11 @@ impl Network{
             let y = lm::reponse_to_vec(i.1 as usize, 10);
             let result_compute = self.compute(i.0.to_vec()).unwrap();
             let a_last = result_compute.0.last().unwrap().to_vec();
-            let z_last = result_compute.1[layer].to_vec();
+            let z_last = result_compute.1.last().unwrap().to_vec();
             let mut z_al = result_compute.1.to_vec();
             z_al.pop();
 
-            let delta_out = lm::scalar_mult(2.0, lm::soustraction(y, a_last).unwrap());
+            let delta_out = lm::scalar_mult(2.0, lm::soustraction(a_last, y).unwrap());
             let mut delta_out = match lm::hadamard(delta_out, Network::sigmoid_deri_v(z_last)){
                 Ok(v) => v,
                 Err(err) => panic!("error on delta out {}", err),
@@ -140,6 +140,7 @@ impl Network{
             // println!("{:?}", out.len());
             new_weight.push(out);
         }
+        // println!("{:?}", new_weight);
         self.weight = new_weight;
         Ok(1)        
     }
@@ -170,6 +171,35 @@ impl Network{
         }
         // println!("{:?} \n", al_x);
         Ok((al_x, zl_x))
+    }
+
+    pub fn test(&self, chunk: Vec<(Vec<f32>, u8)>) -> u32{
+        let mut score = 0;
+        for img in chunk.iter(){
+            let mut input = img.0.to_vec();
+            for current_dim in 0..self.nb_layer - 1{
+                if input.len() != self.layers_size[current_dim] as usize{
+                    panic!("panic in test");
+                }
+                let mut v_inter = Vec::new();
+                for current_neur in 0..self.layers_size[current_dim + 1] as usize{
+                    let mut somme = 0.0;
+                    for i in 0..input.len(){
+                        somme += input[i] * self.weight[current_dim][current_neur][i]; 
+                        // let test:f64 = self.weight[current_dim][i][current_neur]; 
+                    }
+                    v_inter.push(somme + self.bias[current_dim][current_neur])
+                } // repeter pour chaque dimension normalement en remplacent just l'input c'est good
+
+                input = Network::sigmoid_v(&v_inter);
+            }
+            // println!("n: {} v: {:?}", img.1, input);
+            let reponce = lm::vec_to_nb(input);
+            if reponce == img.1{
+                score += 1;
+            }
+        }
+        score
     }
 
     fn sigmoid(x: f32) -> f32{

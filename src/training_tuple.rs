@@ -123,10 +123,11 @@ impl ImageTrain{
             let lab_temp = self.raw_label[i+start_addr_label];
            // convertion des donneer en un vector d'intervall [-1;1]
            // donc passsage en f64
-           let mut vec_float =  Vec::new();
-           for i in v_temp.iter(){
-                vec_float.push(tab_precalcul[*i as usize]);
-           }
+           // let mut vec_float =  Vec::new();
+           // for i in v_temp.iter(){
+                // vec_float.push(tab_precalcul[*i as usize]);
+           // }
+           let vec_float = v_temp.iter().map(|i| tab_precalcul[*i as usize]).collect();
             self.vec_tuple.push((vec_float, lab_temp));
         }
 
@@ -149,4 +150,11 @@ impl ImageTrain{
         self.current_chunk += self.chunk_size;
         Ok(new_vec)
      } 
+
+    pub fn reset(&mut self){
+        
+        let mut rng = rand::prelude::thread_rng();
+        self.vec_tuple.shuffle(&mut rng);
+        self.current_chunk = 0;
+    }
 }

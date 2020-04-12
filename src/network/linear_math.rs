@@ -14,6 +14,18 @@ pub fn reponse_to_vec(responce: usize, size: usize) -> Vec<f32>{
     v
 }
 
+pub fn vec_to_nb(v: Vec<f32>) -> u8{
+    let mut max = 0.0;
+    let mut index = 0;
+    for i in 0..v.len(){
+        if v[i] > max{
+            max = v[i];
+            index = i;
+        }
+    }
+    index as u8
+}
+
 pub fn soustraction<T>(a: Vec<T>, b: Vec<T>) -> Result<Vec<T>, String>
     where T: Copy + Sub<Output = T> 
 {
